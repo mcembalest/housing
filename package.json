@@ -1,7 +1,7 @@
 {
   "name": "housing-dashboard",
   "version": "1.0.0",
-  "description": "High-income housing turnover data visualization dashboard",
+  "description": "High-income housing turnover data",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

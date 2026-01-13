@@ -2,10 +2,10 @@ export default function Home() {
   return (
     <main style={{ padding: '2rem' }}>
       <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>
-        Housing Dashboard
+        Housing Turnover
       </h1>
       <p style={{ color: '#9ca3af' }}>
-        High-income housing turnover data visualization
+        High-income housing turnover data
       </p>
 
       {/* Placeholder for your dashboard components */}

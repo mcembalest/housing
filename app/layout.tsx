@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Housing Dashboard',
-  description: 'High-income housing turnover data visualization',
+  title: 'Housing Turnover',
+  description: 'High-income housing turnover data',
 }
 
 export default function RootLayout({
