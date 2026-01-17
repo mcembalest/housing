@@ -249,6 +249,12 @@ class CacheManager {
     const maxWaitMs = 5000;
     const startTime = Date.now();
 
+    // Ensure parent directory exists before trying to create lock
+    const lockDir = path.dirname(lockPath);
+    if (!fs.existsSync(lockDir)) {
+      fs.mkdirSync(lockDir, { recursive: true });
+    }
+
     // Try to acquire lock
     while (true) {
       try {

@@ -5,16 +5,39 @@ import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { DraggableChartCard } from './DraggableChartCard';
 import { FRED_CHARTS, FredChartMeta } from '@/data/fred-charts';
 import { dashboardTheme } from '@/lib/dashboardTheme';
+import { CustomDataSource, isCustomSource, extractCustomUUID } from '@/lib/types/customSource';
 
 interface DraggableSectionProps {
   id: string;
   name: string;
   chartIds: string[];
+  customSources?: CustomDataSource[];
   onChartClick?: (chartMeta: FredChartMeta) => void;
   startDate?: string;
 }
 
-export function DraggableSection({ id, name, chartIds, onChartClick, startDate }: DraggableSectionProps) {
+// Get chart meta for both built-in and custom sources
+function getChartMeta(chartId: string, customSources: CustomDataSource[]): FredChartMeta | null {
+  if (!isCustomSource(chartId)) {
+    const built = FRED_CHARTS[chartId];
+    return built || null;
+  }
+
+  const uuid = extractCustomUUID(chartId);
+  const custom = customSources.find(s => s.sourceId === uuid);
+  if (!custom || custom.validationStatus !== 'valid') return null;
+
+  return {
+    id: chartId,
+    title: custom.title,
+    description: custom.description || '',
+    file: '', // Not used for custom sources
+    unit: custom.unit,
+    valueColumn: 'value',
+  };
+}
+
+export function DraggableSection({ id, name, chartIds, customSources = [], onChartClick, startDate }: DraggableSectionProps) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
   const sectionStyle: React.CSSProperties = {
@@ -63,7 +86,7 @@ export function DraggableSection({ id, name, chartIds, onChartClick, startDate }
       <div ref={setNodeRef} style={gridStyle}>
         <SortableContext items={chartIds} strategy={rectSortingStrategy}>
           {chartIds.map(chartId => {
-            const chartMeta = FRED_CHARTS[chartId];
+            const chartMeta = getChartMeta(chartId, customSources);
             if (!chartMeta) return null;
             return (
               <DraggableChartCard
