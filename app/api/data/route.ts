@@ -1,8 +1,48 @@
 import { NextResponse } from 'next/server';
+import { neon } from '@neondatabase/serverless';
 import { cacheManager } from '@/lib/data/cacheManager';
-import { getSeriesConfig, SERIES_REGISTRY } from '@/lib/data/seriesRegistry';
+import { getSeriesConfig as getBuiltInSeriesConfig, SERIES_REGISTRY } from '@/lib/data/seriesRegistry';
 import { getProvider } from '@/lib/data/providers';
 import { DataPoint, SeriesConfig } from '@/lib/data/types';
+import { isCustomSource, extractCustomUUID, CustomDataSourceRow } from '@/lib/types/customSource';
+
+// Get series config for both built-in and custom sources
+async function getSeriesConfig(seriesId: string): Promise<SeriesConfig | null> {
+  // Built-in sources
+  if (!isCustomSource(seriesId)) {
+    return getBuiltInSeriesConfig(seriesId) || null;
+  }
+
+  // Custom sources
+  const uuid = extractCustomUUID(seriesId);
+  try {
+    const sql = neon(process.env.DATABASE_URL!);
+    const result = await sql`
+      SELECT * FROM custom_data_sources
+      WHERE source_id = ${uuid}::uuid
+      AND validation_status = 'valid'
+    `;
+
+    if (result.length === 0) return null;
+
+    const source = result[0] as CustomDataSourceRow;
+    return {
+      id: `custom:${source.source_id}`,
+      provider: source.provider,
+      sourceId: source.provider_source_id,
+      frequency: source.frequency as 'daily' | 'weekly' | 'monthly' | 'quarterly',
+      staleAfterHours: source.stale_after_hours,
+      cacheFile: `custom/${source.source_id}.csv`, // UUID as filename
+      title: source.title,
+      description: source.description || '',
+      unit: source.unit,
+      valueColumn: 'value',
+    };
+  } catch (error) {
+    console.error('Error fetching custom source:', error);
+    return null;
+  }
+}
 
 // Track in-flight refreshes to avoid stampedes (per-process)
 const refreshingSet = new Set<string>();
@@ -39,7 +79,7 @@ export async function GET(request: Request) {
   // Single series request
   if (seriesIds.length === 1) {
     const seriesId = seriesIds[0];
-    const config = getSeriesConfig(seriesId);
+    const config = await getSeriesConfig(seriesId);
 
     if (!config) {
       return NextResponse.json(
@@ -58,7 +98,7 @@ export async function GET(request: Request) {
 
   await Promise.all(
     seriesIds.map(async (seriesId) => {
-      const config = getSeriesConfig(seriesId);
+      const config = await getSeriesConfig(seriesId);
       if (!config) {
         errors.push(`Unknown series: ${seriesId}`);
         return;

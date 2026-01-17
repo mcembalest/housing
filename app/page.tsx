@@ -16,6 +16,8 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { DraggableSection, FredChartCard } from '@/components';
 import { FRED_CHARTS, FredChartMeta } from '@/data/fred-charts';
 import { dashboardTheme } from '@/lib/dashboardTheme';
+import { SettingsPanel } from '@/components/SettingsPanel';
+import { CustomDataSource, makeCustomChartId, isCustomSource, extractCustomUUID } from '@/lib/types/customSource';
 
 interface DashboardSection {
   id: string;
@@ -41,6 +43,8 @@ export default function Home() {
   const [selectedChart, setSelectedChart] = useState<FredChartMeta | null>(null);
   const [dateRange, setDateRange] = useState<number | null>(10); // years, null means custom
   const [customStartDate, setCustomStartDate] = useState<string>('2015-01-01');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [customSources, setCustomSources] = useState<CustomDataSource[]>([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -57,6 +61,21 @@ export default function Home() {
       .catch(console.error);
   }, []);
 
+  // Fetch custom sources
+  const fetchCustomSources = useCallback(async () => {
+    try {
+      const res = await fetch('/api/custom-sources');
+      const data = await res.json();
+      setCustomSources(data.sources || []);
+    } catch (error) {
+      console.error('Failed to fetch custom sources:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCustomSources();
+  }, [fetchCustomSources]);
+
   const saveConfig = useCallback(async (newConfig: DashboardConfig) => {
     try {
       await fetch('/api/config', {
@@ -68,6 +87,59 @@ export default function Home() {
       console.error('Failed to save config:', error);
     }
   }, []);
+
+  // Handler for when a source is added
+  const handleSourceAdded = useCallback(async (sourceId: string, sectionId: string) => {
+    const chartId = makeCustomChartId(sourceId);
+    const res = await fetch(`/api/config/sections/${sectionId}/sources`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chartId }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.message || 'Failed to add source to section');
+    }
+
+    // Refresh config and sources
+    const configRes = await fetch('/api/config');
+    const configData = await configRes.json();
+    setConfig(configData);
+    await fetchCustomSources();
+  }, [fetchCustomSources]);
+
+  // Handler for when a source is removed
+  const handleSourceRemoved = useCallback(async (sourceId: string) => {
+    if (!config) return;
+
+    const chartId = makeCustomChartId(sourceId);
+
+    // First, remove from all sections that contain this source
+    for (const section of config.sections) {
+      if (section.chartIds.includes(chartId)) {
+        await fetch(`/api/config/sections/${section.id}/sources?chartId=${encodeURIComponent(chartId)}`, {
+          method: 'DELETE',
+        });
+      }
+    }
+
+    // Then delete the source itself
+    await fetch(`/api/custom-sources/${sourceId}`, {
+      method: 'DELETE',
+    });
+
+    // Refresh config and sources
+    const configRes = await fetch('/api/config');
+    const configData = await configRes.json();
+    setConfig(configData);
+    await fetchCustomSources();
+  }, [config, fetchCustomSources]);
+
+  // Handler for when a source is updated (metadata changed)
+  const handleSourceUpdated = useCallback(() => {
+    fetchCustomSources();
+  }, [fetchCustomSources]);
 
   const findSectionByChartId = (chartId: string): DashboardSection | undefined => {
     return config?.sections.find(s => s.chartIds.includes(chartId));
@@ -192,7 +264,26 @@ export default function Home() {
     );
   }
 
-  const activeChartMeta = activeId ? FRED_CHARTS[activeId] : null;
+  // Get chart meta for active item (handles both built-in and custom sources)
+  const getChartMetaForId = (chartId: string): FredChartMeta | null => {
+    if (!chartId) return null;
+    if (isCustomSource(chartId)) {
+      const uuid = extractCustomUUID(chartId);
+      const source = customSources.find(s => s.sourceId === uuid);
+      if (!source || source.validationStatus !== 'valid') return null;
+      return {
+        id: chartId,
+        title: source.title,
+        description: source.description || '',
+        file: '', // Not used for custom sources
+        unit: source.unit,
+        valueColumn: 'value',
+      };
+    }
+    return FRED_CHARTS[chartId] || null;
+  };
+
+  const activeChartMeta = activeId ? getChartMetaForId(activeId) : null;
 
   // Calculate the start date based on selected range or custom date
   let startDateStr: string;
@@ -285,6 +376,49 @@ export default function Home() {
                 />
               )}
             </div>
+            {/* Settings button */}
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              style={{
+                marginLeft: '16px',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: `1px solid ${dashboardTheme.colors.border}`,
+                backgroundColor: dashboardTheme.colors.surface,
+                color: dashboardTheme.colors.textMuted,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '14px',
+                fontWeight: 500,
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = dashboardTheme.colors.borderStrong;
+                e.currentTarget.style.backgroundColor = dashboardTheme.colors.surfaceAlt;
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = dashboardTheme.colors.border;
+                e.currentTarget.style.backgroundColor = dashboardTheme.colors.surface;
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M8 10C9.10457 10 10 9.10457 10 8C10 6.89543 9.10457 6 8 6C6.89543 6 6 6.89543 6 8C6 9.10457 6.89543 10 8 10Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                />
+                <path
+                  d="M13.6 10.1L12.8 9.5C12.9 9 12.9 8.5 12.8 8L13.6 7.4C13.9 7.2 14 6.8 13.8 6.5L12.8 4.8C12.6 4.5 12.2 4.4 11.9 4.5L10.9 4.9C10.5 4.6 10.1 4.4 9.7 4.2L9.5 3.1C9.4 2.8 9.2 2.5 8.8 2.5H6.8C6.4 2.5 6.2 2.8 6.1 3.1L5.9 4.2C5.5 4.4 5.1 4.6 4.7 4.9L3.7 4.5C3.4 4.4 3 4.5 2.8 4.8L1.8 6.5C1.6 6.8 1.7 7.2 2 7.4L2.8 8C2.7 8.5 2.7 9 2.8 9.5L2 10.1C1.7 10.3 1.6 10.7 1.8 11L2.8 12.7C3 13 3.4 13.1 3.7 13L4.7 12.6C5.1 12.9 5.5 13.1 5.9 13.3L6.1 14.4C6.2 14.7 6.4 15 6.8 15H9.2C9.6 15 9.8 14.7 9.9 14.4L10.1 13.3C10.5 13.1 10.9 12.9 11.3 12.6L12.3 13C12.6 13.1 13 13 13.2 12.7L14.2 11C14.4 10.7 14.3 10.3 14 10.1L13.6 10.1Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Settings
+            </button>
           </div>
         </div>
 
@@ -294,6 +428,7 @@ export default function Home() {
             id={section.id}
             name={section.name}
             chartIds={section.chartIds}
+            customSources={customSources}
             onChartClick={setSelectedChart}
             startDate={startDateStr}
           />
@@ -354,6 +489,18 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Settings Panel */}
+      <SettingsPanel
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        customSources={customSources}
+        sections={config.sections}
+        onSourceAdded={handleSourceAdded}
+        onSourceRemoved={handleSourceRemoved}
+        onSourceUpdated={handleSourceUpdated}
+        onRefreshSources={fetchCustomSources}
+      />
     </DndContext>
   );
 }
