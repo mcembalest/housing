@@ -24,8 +24,6 @@
       "id": "consumer_willingness",
       "name": "Consumer Sentiment",
       "chartIds": [
-        "unemployment_rate",
-        "nonfarm_payrolls",
         "economic_policy_uncertainty",
         "trade_policy_uncertainty",
         "vix"
