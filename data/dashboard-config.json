@@ -1,0 +1,35 @@
+{
+  "sections": [
+    {
+      "id": "affordability",
+      "name": "Affordability",
+      "chartIds": [
+        "housing_prices_case_shiller",
+        "mortgage_rates",
+        "customs_duties",
+        "interest_rates"
+      ]
+    },
+    {
+      "id": "liquidity",
+      "name": "Housing Market Liquidity",
+      "chartIds": [
+        "housing_starts",
+        "housing_starts_single_family",
+        "building_permits",
+        "existing_home_sales"
+      ]
+    },
+    {
+      "id": "consumer_willingness",
+      "name": "Consumer Sentiment",
+      "chartIds": [
+        "unemployment_rate",
+        "nonfarm_payrolls",
+        "economic_policy_uncertainty",
+        "trade_policy_uncertainty",
+        "vix"
+      ]
+    }
+  ]
+}

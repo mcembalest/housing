@@ -1,5 +1,7 @@
 'use client';
 
+import { dashboardTheme } from '@/lib/dashboardTheme';
+
 interface SparklineProps {
   data: { [key: string]: number | string }[];
   dataKey: string;
@@ -14,7 +16,7 @@ export function Sparkline({
   dataKey,
   width = 120,
   height = 32,
-  color = '#10b981',
+  color = dashboardTheme.chart.primary,
   showTrend = true,
 }: SparklineProps) {
   if (!data || data.length < 2) return null;
@@ -35,7 +37,7 @@ export function Sparkline({
     .join(' ');
 
   const trend = values[values.length - 1] > values[0];
-  const trendColor = showTrend ? (trend ? '#10b981' : '#ef4444') : color;
+  const trendColor = showTrend ? (trend ? dashboardTheme.chart.positive : dashboardTheme.chart.negative) : color;
 
   const lastY = height - ((values[values.length - 1] - min) / range) * height * 0.8 - height * 0.1;
 

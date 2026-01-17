@@ -1,5 +1,7 @@
 'use client';
 
+import { dashboardTheme } from '@/lib/dashboardTheme';
+
 interface BarChartProps {
   data: Record<string, unknown>[];
   dataKey: string;
@@ -41,7 +43,7 @@ export function BarChart({
         y1={zeroY}
         x2={width - padding.right}
         y2={zeroY}
-        stroke="#6b7280"
+        stroke={dashboardTheme.chart.axis}
         strokeWidth={1}
       />
 
@@ -51,7 +53,7 @@ export function BarChart({
         const x = padding.left + i * (barWidth + barGap) + barGap / 2;
         const barHeight = Math.abs((value / range) * chartHeight);
         const y = value >= 0 ? zeroY - barHeight : zeroY;
-        const color = value >= 0 ? '#10b981' : '#ef4444';
+        const color = value >= 0 ? dashboardTheme.chart.primary : dashboardTheme.chart.negative;
 
         return (
           <g key={i}>
@@ -67,7 +69,7 @@ export function BarChart({
               <text
                 x={x + barWidth / 2}
                 y={height - padding.bottom + 15}
-                fill="#9ca3af"
+                fill={dashboardTheme.chart.label}
                 fontSize={9}
                 textAnchor="middle"
                 transform={`rotate(-45, ${x + barWidth / 2}, ${height - padding.bottom + 15})`}

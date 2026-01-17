@@ -1,5 +1,7 @@
 'use client';
 
+import { dashboardTheme } from '@/lib/dashboardTheme';
+
 interface MultiLineChartProps {
   data: Record<string, unknown>[];
   dataKey: string;
@@ -10,18 +12,7 @@ interface MultiLineChartProps {
   showLabels?: boolean;
 }
 
-const COLORS = [
-  '#10b981', // green
-  '#3b82f6', // blue
-  '#f59e0b', // amber
-  '#ef4444', // red
-  '#8b5cf6', // purple
-  '#ec4899', // pink
-  '#06b6d4', // cyan
-  '#f97316', // orange
-  '#84cc16', // lime
-  '#6366f1', // indigo
-];
+const COLORS = dashboardTheme.chart.series;
 
 export function MultiLineChart({
   data,
@@ -78,7 +69,7 @@ export function MultiLineChart({
             y1={y}
             x2={padding.left + chartWidth}
             y2={y}
-            stroke="#374151"
+            stroke={dashboardTheme.chart.grid}
             strokeWidth={1}
             strokeDasharray="4,4"
           />
@@ -125,7 +116,7 @@ export function MultiLineChart({
             key={label}
             x={x}
             y={height - padding.bottom + 20}
-            fill="#9ca3af"
+            fill={dashboardTheme.chart.label}
             fontSize={10}
             textAnchor="middle"
           >
