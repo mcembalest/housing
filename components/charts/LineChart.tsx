@@ -1,5 +1,7 @@
 'use client';
 
+import { dashboardTheme } from '@/lib/dashboardTheme';
+
 interface LineChartProps {
   data: Record<string, unknown>[];
   dataKey: string;
@@ -17,7 +19,7 @@ export function LineChart({
   xKey,
   width = 400,
   height = 200,
-  color = '#10b981',
+  color = dashboardTheme.chart.primary,
   showGrid = true,
   showLabels = true,
 }: LineChartProps) {
@@ -59,7 +61,7 @@ export function LineChart({
             y1={line.y}
             x2={width - padding.right}
             y2={line.y}
-            stroke="#374151"
+            stroke={dashboardTheme.chart.grid}
             strokeWidth={1}
             strokeDasharray="4,4"
           />
@@ -67,7 +69,7 @@ export function LineChart({
             <text
               x={padding.left - 8}
               y={line.y + 4}
-              fill="#9ca3af"
+              fill={dashboardTheme.chart.label}
               fontSize={10}
               textAnchor="end"
             >
@@ -98,7 +100,7 @@ export function LineChart({
           key={i}
           x={p.x}
           y={height - padding.bottom + 20}
-          fill="#9ca3af"
+          fill={dashboardTheme.chart.label}
           fontSize={10}
           textAnchor="middle"
         >
