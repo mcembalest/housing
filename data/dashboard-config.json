@@ -4,8 +4,8 @@
       "id": "affordability",
       "name": "Affordability",
       "chartIds": [
-        "housing_prices_case_shiller",
         "mortgage_rates",
+        "housing_prices_case_shiller",
         "customs_duties",
         "interest_rates"
       ]
@@ -24,8 +24,6 @@
       "id": "consumer_willingness",
       "name": "Consumer Sentiment",
       "chartIds": [
-        "unemployment_rate",
-        "nonfarm_payrolls",
         "economic_policy_uncertainty",
         "trade_policy_uncertainty",
         "vix"

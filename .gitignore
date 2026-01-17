@@ -20,3 +20,7 @@ out/
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Data cache metadata (auto-generated)
+data/cache-meta.json
+data/**/*.lock

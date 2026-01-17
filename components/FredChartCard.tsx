@@ -21,7 +21,7 @@ export function FredChartCard({ chartMeta, onClick, compact = true, startDate }:
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/fred?chartId=${chartMeta.id}`)
+    fetch(`/api/data?series=${chartMeta.id}`)
       .then(res => res.json())
       .then(result => {
         setRawData(result.data || []);

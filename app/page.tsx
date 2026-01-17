@@ -156,9 +156,31 @@ export default function Home() {
         setConfig(newConfig);
         saveConfig(newConfig);
       }
-    } else {
-      // Save when moving between sections (already updated in handleDragOver)
-      saveConfig(config);
+    } else if (activeSection.id !== overSection.id) {
+      // Cross-section move: compute the final config here to avoid stale state
+      // (handleDragOver updated React state, but it's async so config is stale)
+      const newConfig = { ...config };
+      const sourceSectionIndex = newConfig.sections.findIndex(s => s.id === activeSection.id);
+      const destSectionIndex = newConfig.sections.findIndex(s => s.id === overSection!.id);
+
+      // Remove from source
+      newConfig.sections[sourceSectionIndex] = {
+        ...newConfig.sections[sourceSectionIndex],
+        chartIds: newConfig.sections[sourceSectionIndex].chartIds.filter(id => id !== activeChartId),
+      };
+
+      // Add to destination
+      const overIndex = overSection.chartIds.indexOf(overId);
+      const insertIndex = overIndex >= 0 ? overIndex : overSection.chartIds.length;
+      const newDestChartIds = [...newConfig.sections[destSectionIndex].chartIds];
+      newDestChartIds.splice(insertIndex, 0, activeChartId);
+      newConfig.sections[destSectionIndex] = {
+        ...newConfig.sections[destSectionIndex],
+        chartIds: newDestChartIds,
+      };
+
+      setConfig(newConfig);
+      saveConfig(newConfig);
     }
   };
 
