@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { neon } from '@neondatabase/serverless';
 
 export interface DashboardSection {
   id: string;
@@ -12,13 +11,11 @@ export interface DashboardConfig {
   sections: DashboardSection[];
 }
 
-const configPath = path.join(process.cwd(), 'data', 'dashboard-config.json');
-
 export async function GET() {
   try {
-    const content = fs.readFileSync(configPath, 'utf-8');
-    const config: DashboardConfig = JSON.parse(content);
-    return NextResponse.json(config);
+    const sql = neon(process.env.DATABASE_URL!);
+    const result = await sql`SELECT config FROM dashboard_config WHERE id = 1`;
+    return NextResponse.json(result[0]?.config ?? { sections: [] });
   } catch (error) {
     console.error('Error loading dashboard config:', error);
     return NextResponse.json({ error: 'Failed to load config' }, { status: 500 });
@@ -40,7 +37,8 @@ export async function POST(request: Request) {
       }
     }
 
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    const sql = neon(process.env.DATABASE_URL!);
+    await sql`UPDATE dashboard_config SET config = ${JSON.stringify(config)}, updated_at = NOW() WHERE id = 1`;
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error saving dashboard config:', error);
